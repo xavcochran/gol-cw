@@ -147,18 +147,6 @@ suggested steps for approaching the problem, but you are *not* required to
 follow this sequence, and can jump straight to implementing the more advanced
 versions of the system if you feel confident about it.
 
-<!---
-**IMPORTANT: You need to modify [the count_test](https://github.com/UoB-CSA/gol-skeleton/blob/master/count_test.go) when testing your distributed implementation by replacing lines 41-53 with:**
-
-```
-for event := range events {
-    switch e := event.(type) {
-    case gol.AliveCellsCount:
-        var expected int
-```
-
-There is a modified version of the test file available [here](https://seis.bristol.ac.uk/~sh1670/dist_count_test.go)
--->
 
 ### Step 1
 
