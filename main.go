@@ -38,22 +38,23 @@ func main() {
 		10000000000,
 		"Specify the number of turns to process. Defaults to 10000000000.")
 
-	noVis := flag.Bool(
-		"noVis",
+	headless := flag.Bool(
+		"headless",
 		false,
-		"Disables the SDL window, so there is no visualisation during the tests.")
+		"Disable the SDL window for running in a headless environment.")
 
 	flag.Parse()
 
-	fmt.Println("Threads:", params.Threads)
-	fmt.Println("Width:", params.ImageWidth)
-	fmt.Println("Height:", params.ImageHeight)
+	fmt.Printf("%-10v %v\n", "Threads", params.Threads)
+	fmt.Printf("%-10v %v\n", "Width", params.ImageWidth)
+	fmt.Printf("%-10v %v\n", "Height", params.ImageHeight)
+	fmt.Printf("%-10v %v\n", "Turns", params.Turns)
 
 	keyPresses := make(chan rune, 10)
 	events := make(chan gol.Event, 1000)
 
 	go gol.Run(params, events, keyPresses)
-	if !(*noVis) {
+	if !(*headless) {
 		sdl.Run(params, events, keyPresses)
 	} else {
 		sdl.RunHeadless(events)
