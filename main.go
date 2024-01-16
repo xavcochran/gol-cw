@@ -56,13 +56,6 @@ func main() {
 	if !(*noVis) {
 		sdl.Run(params, events, keyPresses)
 	} else {
-		complete := false
-		for !complete {
-			event := <-events
-			switch event.(type) {
-			case gol.FinalTurnComplete:
-				complete = true
-			}
-		}
+		sdl.RunHeadless(events)
 	}
 }
