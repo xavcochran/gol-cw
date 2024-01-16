@@ -4,6 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"runtime"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"uk.ac.bris.cs/gameoflife/gol"
 	"uk.ac.bris.cs/gameoflife/sdl"
@@ -53,10 +56,19 @@ func main() {
 	keyPresses := make(chan rune, 10)
 	events := make(chan gol.Event, 1000)
 
+	go sigterm(keyPresses)
+
 	go gol.Run(params, events, keyPresses)
 	if !(*headless) {
 		sdl.Run(params, events, keyPresses)
 	} else {
 		sdl.RunHeadless(events)
 	}
+}
+
+func sigterm(keyPresses chan<- rune) {
+	sigterm := make(chan os.Signal, 1)
+	signal.Notify(sigterm, syscall.SIGTERM, syscall.SIGINT)
+	<-sigterm
+	keyPresses <- 'q'
 }
