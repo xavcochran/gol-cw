@@ -318,7 +318,7 @@ func deadline(ddl time.Duration, msg string) chan<- bool {
 	return done
 }
 
-func timeout(ddl time.Duration, f func(), msg string, a ...any) {
+func timeout(ddl time.Duration, f func(), msg string, a ...interface{}) {
 	done := make(chan bool, 1)
 	go func() {
 		f()
@@ -332,7 +332,7 @@ func timeout(ddl time.Duration, f func(), msg string, a ...any) {
 	}
 }
 
-func assert(predicate bool, msg string, a ...any) {
+func assert(predicate bool, msg string, a ...interface{}) {
 	if !predicate {
 		panic(fmt.Sprintf(msg, a...))
 	}
