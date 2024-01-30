@@ -8,7 +8,7 @@ import (
 const BUF_SIZE = 3
 
 type AvgTurns struct {
-	count             int
+	count             uint
 	lastCompleteTurns int
 	lastCalled        time.Time
 	bufTurns          [BUF_SIZE]int
@@ -39,5 +39,5 @@ func (avg *AvgTurns) Get(completedTurns int) int {
 	for _, durations := range avg.bufDurations {
 		sumDurations += durations
 	}
-	return int(sumTurns) / int(math.Round(sumDurations.Seconds()))
+	return int(sumTurns) / int(math.Round(math.Max(sumDurations.Seconds(), 1)))
 }
