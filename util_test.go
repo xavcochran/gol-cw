@@ -2,12 +2,112 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	"uk.ac.bris.cs/gameoflife/gol"
 	"uk.ac.bris.cs/gameoflife/util"
 )
+
+func checkEqualBoard(given, expected []util.Cell) bool {
+	givenLen := len(given)
+	expectedLen := len(expected)
+
+	if givenLen != expectedLen {
+		return false
+	}
+
+	visited := make([]bool, expectedLen)
+	for i := 0; i < givenLen; i++ {
+		element := given[i]
+		found := false
+		for j := 0; j < expectedLen; j++ {
+			if visited[j] {
+				continue
+			}
+			if expected[j] == element {
+				visited[j] = true
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+
+	return true
+}
+
+func boardFail(t *testing.T, given, expected []util.Cell, p gol.Params) bool {
+	errorString := fmt.Sprintf("-----------------\n\n  FAILED TEST\n  %vx%v\n  %d Workers\n  %d Turns\n", p.ImageWidth, p.ImageHeight, p.Threads, p.Turns)
+	if p.ImageWidth == 16 && p.ImageHeight == 16 {
+		errorString = errorString + util.AliveCellsToString(given, expected, p.ImageWidth, p.ImageHeight)
+	}
+	t.Error(errorString)
+	return false
+}
+
+func assertEqualBoard(t *testing.T, given, expected []util.Cell, p gol.Params) bool {
+	equal := checkEqualBoard(given, expected)
+
+	if !equal {
+		boardFail(t, given, expected, p)
+	}
+
+	return equal
+}
+
+func emptyOutFolder() {
+	os.RemoveAll("out")
+	_ = os.Mkdir("out", os.ModePerm)
+}
+
+func readAliveCells(path string, width, height int) []util.Cell {
+	data, ioError := os.ReadFile(path)
+	util.Check(ioError)
+
+	fields := strings.Fields(string(data))
+
+	if fields[0] != "P5" {
+		panic("Not a pgm file")
+	}
+
+	imageWidth, _ := strconv.Atoi(fields[1])
+	if imageWidth != width {
+		panic("Incorrect width")
+	}
+
+	imageHeight, _ := strconv.Atoi(fields[2])
+	if imageHeight != height {
+		panic("Incorrect height")
+	}
+
+	maxval, _ := strconv.Atoi(fields[3])
+	if maxval != 255 {
+		panic("Incorrect maxval/bit depth")
+	}
+
+	image := []byte(fields[4])
+
+	var cells []util.Cell
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			cell := image[0]
+			if cell != 0 {
+				cells = append(cells, util.Cell{
+					X: x,
+					Y: y,
+				})
+			}
+			image = image[1:]
+		}
+	}
+	return cells
+}
 
 type Tester struct {
 	t            *testing.T
