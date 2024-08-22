@@ -177,7 +177,7 @@ func (tester *Tester) Loop() {
 			}
 
 			if quitPanic {
-				timeout(2*time.Second, awaitDone, "Your program has not returned from the gol.Run function")
+				timeout(tester.t, 2*time.Second, awaitDone, "Your program has not returned from the gol.Run function")
 			} else {
 				timeoutWarn(2*time.Second, awaitDone, "Your program has not returned from the gol.Run function\n%v\n%v", "Continuing with other tests", "You may get unexpected behaviour")
 			}
@@ -188,7 +188,7 @@ func (tester *Tester) Loop() {
 			switch e := event.(type) {
 			case gol.CellFlipped:
 				if tester.sdlSync != nil {
-					assert(e.CompletedTurns == tester.turn,
+					assert(tester.t, e.CompletedTurns == tester.turn,
 						"Expected completed %v turns, got %v instead", tester.turn, e.CompletedTurns)
 				}
 				tester.world[e.Cell.Y][e.Cell.X] = ^tester.world[e.Cell.Y][e.Cell.X]
@@ -197,7 +197,7 @@ func (tester *Tester) Loop() {
 				}
 			case gol.CellsFlipped:
 				if tester.sdlSync != nil {
-					assert(e.CompletedTurns == tester.turn,
+					assert(tester.t, e.CompletedTurns == tester.turn,
 						"Expected completed %v turns, got %v instead", tester.turn, e.CompletedTurns)
 				}
 				for _, cell := range e.Cells {
@@ -210,7 +210,7 @@ func (tester *Tester) Loop() {
 
 				tester.turn++
 				if tester.sdlSync != nil {
-					assert(e.CompletedTurns == tester.turn,
+					assert(tester.t, e.CompletedTurns == tester.turn,
 						"Expected completed %v turns, got %v instead", tester.turn, e.CompletedTurns)
 				}
 
@@ -265,11 +265,11 @@ func (tester *Tester) Stop(returnPanic bool) {
 	stop <- true
 }
 
-func (tester *Tester) AwaitTurn() int {
-	timeout(2*time.Second, func() {
+func (tester *Tester) AwaitTurn() (int, bool) {
+	success := timeout(tester.t, 2*time.Second, func() {
 		<-tester.sdlSync
 	}, "No turns completed in 2 seconds. Is your program deadlocked?")
-	return tester.turn
+	return tester.turn, success
 }
 
 func (tester *Tester) Continue() {
@@ -294,7 +294,7 @@ func (tester *Tester) TestAlive() {
 	} else {
 		expected = 5567
 	}
-	assert(aliveCount == expected,
+	assert(tester.t, aliveCount == expected,
 		"At turn %v expected %v alive cells in the SDL window, got %v instead", tester.turn, expected, aliveCount)
 }
 
@@ -331,24 +331,24 @@ func (tester *Tester) TestImage() {
 
 func (tester *Tester) TestStartsExecuting() {
 	tester.t.Logf("Testing for first StateChange Executing event")
-	timeout(2*time.Second, func() {
+	timeout(tester.t, 2*time.Second, func() {
 		e := <-tester.eventWatcher
 		if e, ok := e.(gol.StateChange); ok {
-			assert(e.NewState == gol.Executing,
+			assert(tester.t, e.NewState == gol.Executing,
 				"First StateChange event should have a NewState of Executing, not %v", e)
-			assert(e.CompletedTurns == 0,
+			assert(tester.t, e.CompletedTurns == 0,
 				"First StateChange event should have a CompletedTurns of 0, not %v", e.CompletedTurns)
 			return
 		}
 
-		panic(fmt.Sprintf("%v event should not be sent before StateChange Executing", e))
+		tester.t.Errorf("%v event should not be sent before StateChange Executing", e)
 
 	}, "No StateChange events received in 2 seconds")
 }
 
 func (tester *Tester) TestExecutes() {
 	tester.t.Logf("Testing for StateChange Executing event")
-	timeout(2*time.Second, func() {
+	timeout(tester.t, 2*time.Second, func() {
 		for e := range tester.eventWatcher {
 			if e, ok := e.(gol.StateChange); ok && e.NewState == gol.Executing {
 				return
@@ -359,7 +359,7 @@ func (tester *Tester) TestExecutes() {
 
 func (tester *Tester) TestPauses() {
 	tester.t.Logf("Testing for StateChange Paused event")
-	timeout(2*time.Second, func() {
+	timeout(tester.t, 2*time.Second, func() {
 		for e := range tester.eventWatcher {
 			if e, ok := e.(gol.StateChange); ok && e.NewState == gol.Paused {
 				return
@@ -370,7 +370,7 @@ func (tester *Tester) TestPauses() {
 
 func (tester *Tester) TestQuits() {
 	tester.t.Logf("Testing for StateChange Quitting event")
-	timeout(2*time.Second, func() {
+	timeout(tester.t, 2*time.Second, func() {
 		for e := range tester.eventWatcher {
 			if e, ok := e.(gol.StateChange); ok && e.NewState == gol.Quitting {
 				return
@@ -382,6 +382,7 @@ func (tester *Tester) TestQuits() {
 func (tester *Tester) TestNoStateChange(ddl time.Duration) {
 	change := make(chan gol.StateChange, 1)
 	stop := make(chan bool)
+
 	go func() {
 		for {
 			select {
@@ -395,12 +396,12 @@ func (tester *Tester) TestNoStateChange(ddl time.Duration) {
 			}
 		}
 	}()
+
 	select {
 	case <-time.After(ddl):
 		stop <- true
-		return
 	case e := <-change:
-		panic(fmt.Sprintf("Recieved unexpected StateChange event %v", e))
+		tester.t.Errorf("Recieved unexpected StateChange event %v", e)
 	}
 }
 
@@ -410,10 +411,10 @@ func (tester *Tester) TestOutput() {
 
 	turn := make(chan int, 1)
 
-	timeout(4*time.Second, func() {
+	completed := timeout(tester.t, 4*time.Second, func() {
 		for e := range tester.eventWatcher {
 			if e, ok := e.(gol.ImageOutputComplete); ok {
-				assert(e.Filename == fmt.Sprintf("%vx%vx%v", width, height, e.CompletedTurns),
+				assert(tester.t, e.Filename == fmt.Sprintf("%vx%vx%v", width, height, e.CompletedTurns),
 					"Filename is not correct")
 				turn <- e.CompletedTurns
 				return
@@ -421,6 +422,10 @@ func (tester *Tester) TestOutput() {
 		}
 	}, "No ImageOutput events received in 4 seconds\n%v",
 		"If this test is running in WSL2, please make sure the test is located within WSL2 file system rather than Windows! i.e. Your path must not start with /mnt/...")
+
+	if !completed {
+		return
+	}
 
 	eventTurn := <-turn
 
@@ -439,12 +444,12 @@ func (tester *Tester) TestOutput() {
 
 	defer func() {
 		if r := recover(); r != nil {
-			panic(fmt.Sprintf("Failed to read image file. Make sure you do ioCheckIdle before sending the ImageOutputComplete\n%v", r))
+			tester.t.Errorf("Failed to read image file. Make sure you do ioCheckIdle before sending the ImageOutputComplete\n%v", r)
 		}
 	}()
 	alive := readAliveCells(path, width, height)
 
-	assert(len(alive) == expected, "At turn %v expected %v alive cells in output PGM image, got %v instead", eventTurn, expected, len(alive))
+	assert(tester.t, len(alive) == expected, "At turn %v expected %v alive cells in output PGM image, got %v instead", eventTurn, expected, len(alive))
 }
 
 func (tester *Tester) TestPause(delay time.Duration) {
@@ -454,7 +459,7 @@ func (tester *Tester) TestPause(delay time.Duration) {
 	// 	<-tester.eventWatcher
 	// }
 	tester.keyPresses <- 'p'
-	timeout(2*time.Second, func() {
+	timeout(tester.t, 2*time.Second, func() {
 		for e := range tester.eventWatcher {
 			if e, ok := e.(gol.StateChange); ok && e.NewState == gol.Paused {
 				return
@@ -467,7 +472,7 @@ func (tester *Tester) TestPause(delay time.Duration) {
 	time.Sleep(2 * time.Second)
 	tester.t.Logf("Testing Pause key pressed again")
 	tester.keyPresses <- 'p'
-	timeout(2*time.Second, func() {
+	timeout(tester.t, 2*time.Second, func() {
 		for e := range tester.eventWatcher {
 			if e, ok := e.(gol.StateChange); ok && e.NewState == gol.Executing {
 				return
@@ -483,7 +488,7 @@ func (tester *Tester) TestQuitting(delay time.Duration) {
 		<-tester.eventWatcher
 	}
 	tester.keyPresses <- 'q'
-	timeout(2*time.Second, func() {
+	timeout(tester.t, 2*time.Second, func() {
 		for e := range tester.eventWatcher {
 			if _, ok := e.(gol.FinalTurnComplete); ok {
 				return
@@ -491,7 +496,7 @@ func (tester *Tester) TestQuitting(delay time.Duration) {
 		}
 	}, "No FinalTurnComplete events received in 2 seconds")
 
-	timeout(4*time.Second, func() {
+	timeout(tester.t, 4*time.Second, func() {
 		for e := range tester.eventWatcher {
 			if _, ok := e.(gol.ImageOutputComplete); ok {
 				return
@@ -499,7 +504,7 @@ func (tester *Tester) TestQuitting(delay time.Duration) {
 		}
 	}, "No ImageOutput events received in 4 seconds")
 
-	timeout(2*time.Second, func() {
+	timeout(tester.t, 2*time.Second, func() {
 		for e := range tester.eventWatcher {
 			if e, ok := e.(gol.StateChange); ok && e.NewState == gol.Quitting {
 				return
@@ -508,20 +513,20 @@ func (tester *Tester) TestQuitting(delay time.Duration) {
 	}, "No Quitting events received in 2 seconds")
 }
 
-func deadline(ddl time.Duration, msg string) chan<- bool {
-	done := make(chan bool, 1)
-	go func() {
-		select {
-		case <-time.After(ddl):
-			panic(msg)
-		case <-done:
-			return
-		}
-	}()
-	return done
-}
+// func deadline(ddl time.Duration, msg string) chan<- bool {
+// 	done := make(chan bool, 1)
+// 	go func() {
+// 		select {
+// 		case <-time.After(ddl):
+// 			panic(msg)
+// 		case <-done:
+// 			return
+// 		}
+// 	}()
+// 	return done
+// }
 
-func timeout(ddl time.Duration, f func(), msg string, a ...interface{}) {
+func timeout(t *testing.T, ddl time.Duration, f func(), msg string, a ...interface{}) bool {
 	done := make(chan bool, 1)
 	go func() {
 		f()
@@ -529,9 +534,10 @@ func timeout(ddl time.Duration, f func(), msg string, a ...interface{}) {
 	}()
 	select {
 	case <-time.After(ddl):
-		panic(fmt.Sprintf(msg, a...))
+		t.Errorf(msg, a...)
+		return false
 	case <-done:
-		return
+		return true
 	}
 }
 
@@ -549,8 +555,8 @@ func timeoutWarn(ddl time.Duration, f func(), msg string, a ...interface{}) {
 	}
 }
 
-func assert(predicate bool, msg string, a ...interface{}) {
+func assert(t *testing.T, predicate bool, msg string, a ...interface{}) {
 	if !predicate {
-		panic(fmt.Sprintf(msg, a...))
+		t.Errorf(msg, a...)
 	}
 }

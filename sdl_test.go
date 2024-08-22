@@ -35,18 +35,28 @@ func testSdlImages(t *testing.T) {
 	go func() {
 		tester.TestStartsExecuting()
 
-		turn := tester.AwaitTurn()
+		turn, success := tester.AwaitTurn()
+		if !success {
+			tester.Stop(false)
+			return
+		}
 
-		assert(turn == 0, "First turn should be 0, not %v\n", turn)
+		assert(tester.t, turn == 0, "First turn should be 0, not %v\n", turn)
 
 		tester.TestImage()
 		tester.Continue()
 
 		for turn < 100 {
-			turn = tester.AwaitTurn()
+			turn, success = tester.AwaitTurn()
+			if !success {
+				tester.Stop(false)
+				return
+			}
+
 			if turn == 1 || turn == 100 {
 				tester.TestImage()
 			}
+
 			tester.Continue()
 		}
 
@@ -79,12 +89,20 @@ func testSdlAlive(t *testing.T) {
 	go func() {
 		tester.TestStartsExecuting()
 
-		turn := tester.AwaitTurn()
-		assert(turn == 0, "First turn should be 0, not %v\n", turn)
+		turn, success := tester.AwaitTurn()
+		if !success {
+			tester.Stop(false)
+			return
+		}
+		assert(tester.t, turn == 0, "First turn should be 0, not %v\n", turn)
 		tester.Continue()
 
 		for turn < 100 {
-			turn = tester.AwaitTurn()
+			turn, success = tester.AwaitTurn()
+			if !success {
+				tester.Stop(false)
+				return
+			}
 			tester.TestAlive()
 			tester.Continue()
 		}
