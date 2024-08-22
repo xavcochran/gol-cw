@@ -160,6 +160,8 @@ func (tester *Tester) SetTestSdl() {
 
 func (tester *Tester) Loop() {
 
+	limitedAssert := LimitedAssert{t: tester.t, failed: false, limitHit: false}
+
 	avgTurns := util.NewAvgTurns()
 
 	for {
@@ -182,14 +184,15 @@ func (tester *Tester) Loop() {
 				timeoutWarn(2*time.Second, awaitDone, "Your program has not returned from the gol.Run function\n%v\n%v", "Continuing with other tests", "You may get unexpected behaviour")
 			}
 
-			// cancelDeadline <- true
+			limitedAssert.LimitHitMessage("Repeat CellFlipped errors have been hidden")
+
 			return
 		case event := <-tester.events:
 			switch e := event.(type) {
 			case gol.CellFlipped:
 				if tester.sdlSync != nil {
-					assert(tester.t, e.CompletedTurns == tester.turn,
-						"Expected completed %v turns, got %v instead", tester.turn, e.CompletedTurns)
+					limitedAssert.Assert(e.CompletedTurns == tester.turn,
+						"Expected completed %v turns for CellFlipped event, got %v instead", tester.turn, e.CompletedTurns)
 				}
 				tester.world[e.Cell.Y][e.Cell.X] = ^tester.world[e.Cell.Y][e.Cell.X]
 				if W != nil {
@@ -197,8 +200,8 @@ func (tester *Tester) Loop() {
 				}
 			case gol.CellsFlipped:
 				if tester.sdlSync != nil {
-					assert(tester.t, e.CompletedTurns == tester.turn,
-						"Expected completed %v turns, got %v instead", tester.turn, e.CompletedTurns)
+					limitedAssert.Assert(e.CompletedTurns == tester.turn,
+						"Expected completed %v turns for CellsFlipped event, got %v instead", tester.turn, e.CompletedTurns)
 				}
 				for _, cell := range e.Cells {
 					tester.world[cell.Y][cell.X] = ^tester.world[cell.Y][cell.X]
@@ -210,8 +213,9 @@ func (tester *Tester) Loop() {
 
 				tester.turn++
 				if tester.sdlSync != nil {
+					limitedAssert.Reset()
 					assert(tester.t, e.CompletedTurns == tester.turn,
-						"Expected completed %v turns, got %v instead", tester.turn, e.CompletedTurns)
+						"Expected completed %v turns for TurnComplete event, got %v instead", tester.turn, e.CompletedTurns)
 				}
 
 				if Refresh != nil {
@@ -558,5 +562,32 @@ func timeoutWarn(ddl time.Duration, f func(), msg string, a ...interface{}) {
 func assert(t *testing.T, predicate bool, msg string, a ...interface{}) {
 	if !predicate {
 		t.Errorf(msg, a...)
+	}
+}
+
+type LimitedAssert struct {
+	t        *testing.T
+	failed   bool
+	limitHit bool
+}
+
+func (l *LimitedAssert) Assert(predicate bool, msg string, a ...interface{}) {
+	if !predicate {
+		if l.failed {
+			l.limitHit = true
+		} else {
+			l.t.Errorf(msg, a...)
+			l.failed = true
+		}
+	}
+}
+
+func (l *LimitedAssert) Reset() {
+	l.failed = false
+}
+
+func (l *LimitedAssert) LimitHitMessage(msg string) {
+	if l.limitHit {
+		l.t.Log(msg)
 	}
 }
