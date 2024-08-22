@@ -323,9 +323,9 @@ func (tester *Tester) TestImage() {
 		equal := checkEqualBoard(aliveCells, expectedAlive)
 		if !equal {
 			if tester.turn == 0 {
-				tester.t.Error("The image displayed in the SDL window is incorrect for turn 0\nHave you sent the correct CellFlipped events before StateChange Executing?")
+				tester.t.Error("ERROR: The image displayed in the SDL window is incorrect for turn 0\nHave you sent the correct CellFlipped events before StateChange Executing?")
 			} else {
-				tester.t.Errorf("The image displayed in the SDL window is incorrect for turn %v", tester.turn)
+				tester.t.Errorf("ERROR: The image displayed in the SDL window is incorrect for turn %v", tester.turn)
 			}
 		}
 	} else {
@@ -345,7 +345,7 @@ func (tester *Tester) TestStartsExecuting() {
 			return
 		}
 
-		tester.t.Errorf("%v event should not be sent before StateChange Executing", e)
+		tester.t.Errorf("ERROR: %v event should not be sent before StateChange Executing", e)
 
 	}, "No StateChange events received in 2 seconds")
 }
@@ -405,7 +405,7 @@ func (tester *Tester) TestNoStateChange(ddl time.Duration) {
 	case <-time.After(ddl):
 		stop <- true
 	case e := <-change:
-		tester.t.Errorf("Recieved unexpected StateChange event %v", e)
+		tester.t.Errorf("ERROR: Recieved unexpected StateChange event %v", e)
 	}
 }
 
@@ -448,7 +448,7 @@ func (tester *Tester) TestOutput() {
 
 	defer func() {
 		if r := recover(); r != nil {
-			tester.t.Errorf("Failed to read image file. Make sure you do ioCheckIdle before sending the ImageOutputComplete\n%v", r)
+			tester.t.Errorf("ERROR: Failed to read image file. Make sure you do ioCheckIdle before sending the ImageOutputComplete\n%v", r)
 		}
 	}()
 	alive := readAliveCells(path, width, height)
@@ -538,7 +538,7 @@ func timeout(t *testing.T, ddl time.Duration, f func(), msg string, a ...interfa
 	}()
 	select {
 	case <-time.After(ddl):
-		t.Errorf(msg, a...)
+		t.Errorf("ERROR: %v", fmt.Sprintf(msg, a...))
 		return false
 	case <-done:
 		return true
@@ -561,7 +561,7 @@ func timeoutWarn(ddl time.Duration, f func(), msg string, a ...interface{}) {
 
 func assert(t *testing.T, predicate bool, msg string, a ...interface{}) {
 	if !predicate {
-		t.Errorf(msg, a...)
+		t.Errorf("ERROR: %v", fmt.Sprintf(msg, a...))
 	}
 }
 
@@ -576,7 +576,7 @@ func (l *LimitedAssert) Assert(predicate bool, msg string, a ...interface{}) {
 		if l.failed {
 			l.limitHit = true
 		} else {
-			l.t.Errorf(msg, a...)
+			l.t.Errorf("ERROR: %v", fmt.Sprintf(msg, a...))
 			l.failed = true
 		}
 	}

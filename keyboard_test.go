@@ -41,7 +41,7 @@ func testKeyboardP(t *testing.T) {
 
 		allowDoneMutex.Lock()
 		if !allowDone {
-			t.Error("Your program has returned from the gol.Run function before it was unpaused")
+			t.Error("ERROR: Your program has returned from the gol.Run function before it was unpaused")
 		}
 		allowDoneMutex.Unlock()
 	}()

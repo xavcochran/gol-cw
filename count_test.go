@@ -48,7 +48,7 @@ func TestAlive(t *testing.T) {
 		case e := <-aliveCellCounts:
 			var expected int
 			if e.CompletedTurns == 0 {
-				t.Fatal("Count reported for turn 0, should have a delay.")
+				t.Fatal("ERROR: Count reported for turn 0, should have a delay.")
 			} else if e.CompletedTurns <= 10000 {
 				expected = alive[e.CompletedTurns]
 			} else if e.CompletedTurns%2 == 0 {
@@ -58,7 +58,7 @@ func TestAlive(t *testing.T) {
 			}
 			actual := e.CellsCount
 			if expected != actual {
-				t.Fatalf("At turn %v expected %v alive cells, got %v instead", e.CompletedTurns, expected, actual)
+				t.Fatalf("ERROR: At turn %v expected %v alive cells, got %v instead", e.CompletedTurns, expected, actual)
 			} else {
 				t.Log(e)
 				implemented = true
@@ -71,10 +71,10 @@ func TestAlive(t *testing.T) {
 			}
 		case <-timer:
 			if !implemented {
-				t.Fatal("No AliveCellsCount events received in 5 seconds")
+				t.Fatal("ERROR: No AliveCellsCount events received in 5 seconds")
 			}
 		case <-eventsClosed:
-			t.Fatal("Not enough AliveCellsCount events received")
+			t.Fatal("ERROR: Not enough AliveCellsCount events received")
 		}
 	}
 }
