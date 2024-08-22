@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"testing"
+
 	"uk.ac.bris.cs/gameoflife/gol"
 )
 
@@ -21,6 +22,9 @@ func TestPgm(t *testing.T) {
 				p.ImageWidth,
 				p.ImageHeight,
 			)
+
+			emptyOutFolder()
+
 			for threads := 1; threads <= 16; threads++ {
 				p.Threads = threads
 				testName := fmt.Sprintf("%dx%dx%d-%d", p.ImageWidth, p.ImageHeight, p.Turns, p.Threads)
