@@ -46,21 +46,12 @@ func TestGol(t *testing.T) {
 	}
 }
 
-func boardFail(t *testing.T, given, expected []util.Cell, p gol.Params) bool {
-	errorString := fmt.Sprintf("-----------------\n\n  FAILED TEST\n  %vx%v\n  %d Workers\n  %d Turns\n", p.ImageWidth, p.ImageHeight, p.Threads, p.Turns)
-	if p.ImageWidth == 16 && p.ImageHeight == 16 {
-		errorString = errorString + util.AliveCellsToString(given, expected, p.ImageWidth, p.ImageHeight)
-	}
-	t.Error(errorString)
-	return false
-}
-
-func assertEqualBoard(t *testing.T, given, expected []util.Cell, p gol.Params) bool {
+func checkEqualBoard(given, expected []util.Cell) bool {
 	givenLen := len(given)
 	expectedLen := len(expected)
 
 	if givenLen != expectedLen {
-		return boardFail(t, given, expected, p)
+		return false
 	}
 
 	visited := make([]bool, expectedLen)
@@ -78,11 +69,35 @@ func assertEqualBoard(t *testing.T, given, expected []util.Cell, p gol.Params) b
 			}
 		}
 		if !found {
-			return boardFail(t, given, expected, p)
+			return false
 		}
 	}
 
 	return true
+}
+
+func boardFail(t *testing.T, given, expected []util.Cell, p gol.Params) bool {
+	errorString := fmt.Sprintf("-----------------\n\n  FAILED TEST\n  %vx%v\n  %d Workers\n  %d Turns\n", p.ImageWidth, p.ImageHeight, p.Threads, p.Turns)
+	if p.ImageWidth == 16 && p.ImageHeight == 16 {
+		errorString = errorString + util.AliveCellsToString(given, expected, p.ImageWidth, p.ImageHeight)
+	}
+	t.Error(errorString)
+	return false
+}
+
+func assertEqualBoard(t *testing.T, given, expected []util.Cell, p gol.Params) bool {
+	equal := checkEqualBoard(given, expected)
+
+	if !equal {
+		boardFail(t, given, expected, p)
+	}
+
+	return equal
+}
+
+func emptyOutFolder() {
+	os.RemoveAll("out")
+	_ = os.Mkdir("out", os.ModePerm)
 }
 
 func readAliveCells(path string, width, height int) []util.Cell {
