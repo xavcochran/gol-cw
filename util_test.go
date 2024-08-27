@@ -135,7 +135,9 @@ func MakeTester(
 		world[i] = make([]byte, params.ImageWidth)
 	}
 
-	W.ClearPixels()
+	if W != nil {
+		W.ClearPixels()
+	}
 	emptyOutFolder()
 
 	eventWatcher := make(chan gol.Event, 1000)
