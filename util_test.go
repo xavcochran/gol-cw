@@ -271,7 +271,7 @@ func (tester *Tester) Stop(returnPanic bool) {
 	stop <- true
 }
 
-func (tester *Tester) AwaitTurn() (int, bool) {
+func (tester *Tester) AwaitSync() (int, bool) {
 	success := timeout(tester.t, 2*time.Second, func() {
 		<-tester.sdlSync
 	}, "No turns completed in 2 seconds. Is your program deadlocked?")
