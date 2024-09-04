@@ -225,8 +225,6 @@ func (tester *Tester) Loop() {
 				}
 
 				if tester.sdlSync != nil {
-					// tester.testAlive()
-					// tester.testImage()
 					tester.sdlSync <- true
 					<-tester.sdlSync
 				}
@@ -243,8 +241,6 @@ func (tester *Tester) Loop() {
 				tester.eventWatcher <- e
 
 				if tester.sdlSync != nil && tester.turn == 0 {
-					// tester.testAlive()
-					// tester.testImage()
 					tester.sdlSync <- true
 					<-tester.sdlSync
 				}
@@ -446,8 +442,6 @@ func (tester *Tester) TestOutput() {
 
 	path := fmt.Sprintf("out/%vx%vx%v.pgm", width, height, eventTurn)
 
-	// time.Sleep(1 * time.Second)
-
 	defer func() {
 		if r := recover(); r != nil {
 			tester.t.Errorf("ERROR: Failed to read image file. Make sure you do ioCheckIdle before sending the ImageOutputComplete\n%v", r)
@@ -457,80 +451,6 @@ func (tester *Tester) TestOutput() {
 
 	assert(tester.t, len(alive) == expected, "At turn %v expected %v alive cells in output PGM image, got %v instead", eventTurn, expected, len(alive))
 }
-
-func (tester *Tester) TestPause(delay time.Duration) {
-	// time.Sleep(delay)
-	tester.t.Logf("Testing Pause key pressed")
-	// for len(tester.eventWatcher) > 0 {
-	// 	<-tester.eventWatcher
-	// }
-	tester.keyPresses <- 'p'
-	timeout(tester.t, 2*time.Second, func() {
-		for e := range tester.eventWatcher {
-			if e, ok := e.(gol.StateChange); ok && e.NewState == gol.Paused {
-				return
-			}
-		}
-	}, "No Pause events received in 2 seconds")
-
-	// tester.TestOutput(2 * time.Second)
-
-	time.Sleep(2 * time.Second)
-	tester.t.Logf("Testing Pause key pressed again")
-	tester.keyPresses <- 'p'
-	timeout(tester.t, 2*time.Second, func() {
-		for e := range tester.eventWatcher {
-			if e, ok := e.(gol.StateChange); ok && e.NewState == gol.Executing {
-				return
-			}
-		}
-	}, "No Executing events received in 2 seconds")
-}
-
-func (tester *Tester) TestQuitting(delay time.Duration) {
-	time.Sleep(delay)
-	tester.t.Logf("Testing Quit key pressed")
-	for len(tester.eventWatcher) > 0 {
-		<-tester.eventWatcher
-	}
-	tester.keyPresses <- 'q'
-	timeout(tester.t, 2*time.Second, func() {
-		for e := range tester.eventWatcher {
-			if _, ok := e.(gol.FinalTurnComplete); ok {
-				return
-			}
-		}
-	}, "No FinalTurnComplete events received in 2 seconds")
-
-	timeout(tester.t, 4*time.Second, func() {
-		for e := range tester.eventWatcher {
-			if _, ok := e.(gol.ImageOutputComplete); ok {
-				return
-			}
-		}
-	}, "No ImageOutput events received in 4 seconds")
-
-	timeout(tester.t, 2*time.Second, func() {
-		for e := range tester.eventWatcher {
-			if e, ok := e.(gol.StateChange); ok && e.NewState == gol.Quitting {
-				return
-			}
-		}
-	}, "No Quitting events received in 2 seconds")
-}
-
-// func deadline(ddl time.Duration, msg string) chan<- bool {
-// 	done := make(chan bool, 1)
-// 	go func() {
-// 		select {
-// 		case <-time.After(ddl):
-// 			panic(msg)
-// 		case <-done:
-// 			return
-// 		}
-// 	}()
-// 	return done
-// }
 
 func timeout(t *testing.T, ddl time.Duration, f func(), msg string, a ...interface{}) bool {
 	done := make(chan bool, 1)
