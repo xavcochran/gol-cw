@@ -8,7 +8,7 @@ import (
 	"uk.ac.bris.cs/gameoflife/gol"
 )
 
-// TestState tests for StateChange Executing and Quitting events
+// TestKeyboard tests key presses and events
 func TestKeyboard(t *testing.T) {
 	t.Run("p", testKeyboardP)
 	t.Run("s", testKeyboardS)

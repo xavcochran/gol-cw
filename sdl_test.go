@@ -6,7 +6,7 @@ import (
 	"uk.ac.bris.cs/gameoflife/gol"
 )
 
-// TestSdl tests key presses and events
+// TestSdl tests for correct visualisation in the SDL window
 func TestSdl(t *testing.T) {
 	t.Run("turn", testSdlTurn)
 	t.Run("images", testSdlImages)
