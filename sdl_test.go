@@ -8,8 +8,37 @@ import (
 
 // TestSdl tests key presses and events
 func TestSdl(t *testing.T) {
-	t.Run("image", testSdlImages)
+	t.Run("turn", testSdlTurn)
+	t.Run("images", testSdlImages)
 	t.Run("alive", testSdlAlive)
+}
+
+func testSdlTurn(t *testing.T) {
+	params := gol.Params{
+		Turns:       100,
+		Threads:     8,
+		ImageWidth:  512,
+		ImageHeight: 512,
+	}
+
+	keyPresses := make(chan rune, 10)
+	events := make(chan gol.Event, 1000)
+
+	golDone := make(chan bool, 1)
+	go func() {
+		gol.Run(params, events, keyPresses)
+		golDone <- true
+	}()
+
+	tester := MakeTester(t, params, keyPresses, events, golDone)
+
+	go func() {
+		tester.TestFinishes(20)
+		tester.TestTurnCompleteCount()
+		tester.Stop(false)
+	}()
+
+	tester.Loop()
 }
 
 func testSdlImages(t *testing.T) {

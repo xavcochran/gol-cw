@@ -383,6 +383,29 @@ func (tester *Tester) TestPauses() {
 	}, "No StateChange Paused events received in 2 seconds")
 }
 
+func (tester *Tester) TestFinishes(allowedTime int) {
+	tester.t.Logf("Testing for FinalTurnComplete event")
+	timeout(tester.t, time.Duration(allowedTime)*time.Second, func() {
+		for e := range tester.eventWatcher {
+			if e, ok := e.(gol.FinalTurnComplete); ok {
+				assert(tester.t, e.CompletedTurns == tester.params.Turns,
+					"FinalTurnComplete should have a CompletedTurns of %v, not %v", tester.params.Turns, e.CompletedTurns)
+				return
+			}
+		}
+	}, "No FinalTurnComplete events received in %v seconds", allowedTime)
+}
+
+func (tester *Tester) TestTurnCompleteCount() {
+	tester.t.Logf("Testing number of TurnComplete events sent")
+
+	if tester.turn > tester.params.Turns {
+		tester.t.Errorf("ERROR: Too many TurnComplete events sent. Should be %v, not %v", tester.params.Turns, tester.turn)
+	} else if tester.turn < tester.params.Turns {
+		tester.t.Errorf("ERROR: Too few TurnComplete events sent. Should be %v, not %v", tester.params.Turns, tester.turn)
+	}
+}
+
 func (tester *Tester) TestQuits() {
 	tester.t.Logf("Testing for StateChange Quitting event")
 	timeout(tester.t, 2*time.Second, func() {
