@@ -232,13 +232,13 @@ func (tester *Tester) Loop() {
 				fmt.Printf("Completed Turns %-8v %-20v Avg%+5v turns/sec\n", event.GetCompletedTurns(), event, avgTurns.Get(event.GetCompletedTurns()))
 			case gol.ImageOutputComplete:
 				fmt.Printf("Completed Turns %-8v %v\n", event.GetCompletedTurns(), event)
-				tester.eventWatcher <- e
+				tester.HandleEvent(e)
 			case gol.FinalTurnComplete:
 				fmt.Printf("Completed Turns %-8v %v\n", event.GetCompletedTurns(), event)
-				tester.eventWatcher <- e
+				tester.HandleEvent(e)
 			case gol.StateChange:
 				fmt.Printf("Completed Turns %-8v %v\n", event.GetCompletedTurns(), event)
-				tester.eventWatcher <- e
+				tester.HandleEvent(e)
 
 				if tester.sdlSync != nil && tester.turn == 0 {
 					tester.sdlSync <- true
@@ -247,6 +247,17 @@ func (tester *Tester) Loop() {
 			}
 		}
 	}
+}
+
+func (tester *Tester) HandleEvent(event gol.Event) {
+	if len(tester.eventWatcher) >= cap(tester.eventWatcher) {
+		fmt.Printf("WARNING: The tester's internal event buffer is full\n%v\n%v\n",
+			"Discarding earliest event",
+			"Are you sending too many ImageOutputComplete, FinalTurnComplete or StateChange events?")
+		<-tester.eventWatcher
+	}
+
+	tester.eventWatcher <- event
 }
 
 func (tester *Tester) Stop(returnPanic bool) {
