@@ -120,6 +120,7 @@ type Tester struct {
 	turn         int
 	world        [][]byte
 	aliveMap     map[int]int
+	testTurn     bool
 	sdlSync      chan bool
 }
 
@@ -152,11 +153,17 @@ func MakeTester(
 		turn:         0,
 		world:        world,
 		aliveMap:     readAliveCounts(params.ImageWidth, params.ImageHeight),
+		testTurn:     false,
 		sdlSync:      nil,
 	}
 }
 
+func (tester *Tester) SetTestTurn() {
+	tester.testTurn = true
+}
+
 func (tester *Tester) SetTestSdl() {
+	tester.testTurn = true
 	tester.sdlSync = make(chan bool)
 }
 
@@ -192,7 +199,7 @@ func (tester *Tester) Loop() {
 		case event := <-tester.events:
 			switch e := event.(type) {
 			case gol.CellFlipped:
-				if tester.sdlSync != nil {
+				if tester.testTurn {
 					limitedAssert.Assert(e.CompletedTurns == tester.turn || e.CompletedTurns == tester.turn+1,
 						"Expected completed %v or %v turns for CellFlipped event, got %v instead", tester.turn, tester.turn+1, e.CompletedTurns)
 				}
@@ -201,7 +208,7 @@ func (tester *Tester) Loop() {
 					W.FlipPixel(e.Cell.X, e.Cell.Y)
 				}
 			case gol.CellsFlipped:
-				if tester.sdlSync != nil {
+				if tester.testTurn {
 					limitedAssert.Assert(e.CompletedTurns == tester.turn || e.CompletedTurns == tester.turn+1,
 						"Expected completed %v or %v turns for CellsFlipped event, got %v instead", tester.turn, tester.turn+1, e.CompletedTurns)
 				}
@@ -213,7 +220,7 @@ func (tester *Tester) Loop() {
 				}
 			case gol.TurnComplete:
 
-				if tester.sdlSync != nil {
+				if tester.testTurn {
 					limitedAssert.Reset()
 					assert(tester.t, e.CompletedTurns == tester.turn || e.CompletedTurns == tester.turn+1,
 						"Expected completed %v or %v turns for TurnComplete event, got %v instead", tester.turn, tester.turn+1, e.CompletedTurns)

@@ -31,6 +31,7 @@ func testSdlTurn(t *testing.T) {
 	}()
 
 	tester := MakeTester(t, params, keyPresses, events, golDone)
+	tester.SetTestTurn()
 
 	go func() {
 		tester.TestFinishes(20)
