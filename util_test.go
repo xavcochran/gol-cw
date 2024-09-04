@@ -279,6 +279,8 @@ func (tester *Tester) Continue() {
 }
 
 func (tester *Tester) TestAlive() {
+	tester.t.Logf("Checking number of alive cells in the SDL window at turn %v", tester.turn)
+
 	aliveCount := 0
 	for _, row := range tester.world {
 		for _, cell := range row {
