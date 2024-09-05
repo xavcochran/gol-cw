@@ -188,9 +188,9 @@ func (tester *Tester) Loop() {
 			}
 
 			if quitPanic {
-				timeout(tester.t, 2*time.Second, awaitDone, "Your program has not returned from the gol.Run function")
+				timeout(tester.t, 2*time.Second, awaitDone, "Your program has not returned from the gol.Run function\n%v\n%v", "Continuing with other tests, leaving your program executing", "You may get unexpected behaviour")
 			} else {
-				timeoutWarn(2*time.Second, awaitDone, "Your program has not returned from the gol.Run function\n%v\n%v", "Continuing with other tests", "You may get unexpected behaviour")
+				timeoutWarn(2*time.Second, awaitDone, "Your program has not returned from the gol.Run function\n%v\n%v", "Continuing with other tests, leaving your program executing", "You may get unexpected behaviour")
 			}
 
 			limitedAssert.LimitHitMessage("Repeat CellFlipped errors have been hidden")
