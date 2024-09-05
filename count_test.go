@@ -58,7 +58,7 @@ func TestAlive(t *testing.T) {
 			}
 			actual := e.CellsCount
 			if expected != actual {
-				t.Errorf("ERROR: At turn %v expected %v alive cells, got %v instead", e.CompletedTurns, expected, actual)
+				t.Fatalf("ERROR: At turn %v expected %v alive cells, got %v instead", e.CompletedTurns, expected, actual)
 			} else {
 				t.Log(e)
 				implemented = true
