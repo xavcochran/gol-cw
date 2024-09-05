@@ -49,7 +49,7 @@ func testKeyboardP(t *testing.T) {
 	tester := MakeTester(t, params, keyPresses, events, golDone)
 
 	go func() {
-		tester.TestPauses()
+		turn := tester.TestPauses()
 
 		tester.TestNoStateChange(5 * time.Second)
 
@@ -58,7 +58,7 @@ func testKeyboardP(t *testing.T) {
 		allowDoneMutex.Unlock()
 		keyPresses <- 'p'
 
-		tester.TestExecutes()
+		tester.TestExecutes(turn)
 
 		tester.Stop(false)
 	}()

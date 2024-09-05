@@ -368,26 +368,40 @@ func (tester *Tester) TestStartsExecuting() {
 	}, "No StateChange events received in 2 seconds")
 }
 
-func (tester *Tester) TestExecutes() {
+func (tester *Tester) TestExecutes(turn int) {
 	tester.t.Logf("Testing for StateChange Executing event")
 	timeout(tester.t, 2*time.Second, func() {
 		for e := range tester.eventWatcher {
 			if e, ok := e.(gol.StateChange); ok && e.NewState == gol.Executing {
+				if e.CompletedTurns != turn && e.CompletedTurns != turn+1 {
+					tester.t.Errorf("ERROR: StateChange event should have a CompletedTurns of %v or %v, not %v", turn, turn+1, e.CompletedTurns)
+				}
+
 				return
 			}
 		}
 	}, "No StateChange Executing events received in 2 seconds")
 }
 
-func (tester *Tester) TestPauses() {
+func (tester *Tester) TestPauses() int {
 	tester.t.Logf("Testing for StateChange Paused event")
-	timeout(tester.t, 2*time.Second, func() {
+
+	turn := make(chan int, 1)
+
+	completed := timeout(tester.t, 2*time.Second, func() {
 		for e := range tester.eventWatcher {
 			if e, ok := e.(gol.StateChange); ok && e.NewState == gol.Paused {
+				turn <- e.CompletedTurns
 				return
 			}
 		}
 	}, "No StateChange Paused events received in 2 seconds")
+
+	if !completed {
+		return -1
+	} else {
+		return <-turn
+	}
 }
 
 func (tester *Tester) TestFinishes(allowedTime int) {
