@@ -2,6 +2,7 @@ package gol
 
 import (
 	"fmt"
+
 	"uk.ac.bris.cs/gameoflife/util"
 )
 
@@ -59,7 +60,7 @@ type CellFlipped struct { // implements Event
 // Choose one of them.
 type CellsFlipped struct { // implements Event
 	CompletedTurns int
-	Cells   []util.Cell
+	Cells          []util.Cell
 }
 
 // `TurnComplete` is an Event notifying the GUI about turn completion.
