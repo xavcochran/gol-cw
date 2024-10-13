@@ -8,10 +8,13 @@ import (
 	"time"
 
 	"uk.ac.bris.cs/gameoflife/sdl"
+	"uk.ac.bris.cs/gameoflife/util"
 )
 
-var W *sdl.Window
-var Refresh chan bool
+var w *sdl.Window
+var flipCellChan chan util.Cell
+var refreshChan chan struct{}
+var clearPixelsChan chan struct{}
 
 func TestMain(m *testing.M) {
 	runtime.LockOSThread()
@@ -26,8 +29,10 @@ func TestMain(m *testing.M) {
 	if !(*sdlFlag) {
 		go test()
 	} else {
-		W = sdl.NewWindow(512, 512)
-		Refresh = make(chan bool, 1)
+		w = sdl.NewWindow(512, 512)
+		flipCellChan = make(chan util.Cell, 1000)
+		refreshChan = make(chan struct{}, 1)
+		clearPixelsChan = make(chan struct{}, 1)
 		fps := 60
 		ticker := time.NewTicker(time.Second / time.Duration(fps))
 		dirty := false
@@ -37,18 +42,41 @@ func TestMain(m *testing.M) {
 			select {
 			case code := <-done:
 				done <- code
-				W.Destroy()
+				w.Destroy()
 				break loop
 			case <-ticker.C:
-				W.PollEvent()
+				w.PollEvent()
 				if dirty {
-					W.RenderFrame()
+					w.RenderFrame()
 					dirty = false
 				}
-			case <-Refresh:
+			case cell := <-flipCellChan:
+				w.FlipPixel(cell.X, cell.Y)
+			case <-clearPixelsChan:
+				w.ClearPixels()
+				w.RenderFrame()
+			case <-refreshChan:
 				dirty = true
 			}
 		}
 	}
 	os.Exit(<-done)
+}
+
+func flipCell(cell util.Cell) {
+	if flipCellChan != nil {
+		flipCellChan <- cell
+	}
+}
+
+func refresh() {
+	if refreshChan != nil {
+		refreshChan <- struct{}{}
+	}
+}
+
+func clearPixels() {
+	if clearPixelsChan != nil {
+		clearPixelsChan <- struct{}{}
+	}
 }

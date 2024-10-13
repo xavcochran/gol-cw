@@ -136,9 +136,7 @@ func MakeTester(
 		world[i] = make([]byte, params.ImageWidth)
 	}
 
-	if W != nil {
-		W.ClearPixels()
-	}
+	clearPixels()
 	emptyOutFolder()
 
 	eventWatcher := make(chan gol.Event, 1000)
@@ -168,7 +166,7 @@ func (tester *Tester) SetTestSdl() {
 }
 
 func (tester *Tester) Loop() {
-
+	defer clearPixels()
 	limitedAssert := LimitedAssert{t: tester.t, failed: false, limitHit: false}
 
 	avgTurns := util.NewAvgTurns()
@@ -204,9 +202,7 @@ func (tester *Tester) Loop() {
 						"Expected completed %v or %v turns for CellFlipped event, got %v instead", tester.turn, tester.turn+1, e.CompletedTurns)
 				}
 				tester.world[e.Cell.Y][e.Cell.X] = ^tester.world[e.Cell.Y][e.Cell.X]
-				if W != nil {
-					W.FlipPixel(e.Cell.X, e.Cell.Y)
-				}
+				flipCell(e.Cell)
 			case gol.CellsFlipped:
 				if tester.testTurn {
 					limitedAssert.Assert(e.CompletedTurns == tester.turn || e.CompletedTurns == tester.turn+1,
@@ -214,23 +210,16 @@ func (tester *Tester) Loop() {
 				}
 				for _, cell := range e.Cells {
 					tester.world[cell.Y][cell.X] = ^tester.world[cell.Y][cell.X]
-					if W != nil {
-						W.FlipPixel(cell.X, cell.Y)
-					}
+					flipCell(cell)
 				}
 			case gol.TurnComplete:
-
 				if tester.testTurn {
 					limitedAssert.Reset()
 					assert(tester.t, e.CompletedTurns == tester.turn || e.CompletedTurns == tester.turn+1,
 						"Expected completed %v or %v turns for TurnComplete event, got %v instead", tester.turn, tester.turn+1, e.CompletedTurns)
 				}
 				tester.turn++
-
-				if Refresh != nil {
-					Refresh <- true
-				}
-
+				refresh()
 				if tester.sdlSync != nil {
 					tester.sdlSync <- true
 					<-tester.sdlSync
