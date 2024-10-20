@@ -22,7 +22,7 @@ func worker(p Params, y1, y2 int, world func(y, x int) uint8, res chan<- [][]uin
 
 	// go through each row and column and calculate if the cell should be alive or dead
 	for i := 0; i < p.ImageWidth; i++ {
-		for j := 0; j < slice; j++ {
+		for j := y1; j <= y2; j++ {
 			aliveNeighbors := 0
 			// check the 8 neighbors of the cell
 			for x := -1; x <= 1; x++ {
@@ -42,18 +42,18 @@ func worker(p Params, y1, y2 int, world func(y, x int) uint8, res chan<- [][]uin
 			if world(j, i) == 255 {
 				if aliveNeighbors < 2 || aliveNeighbors > 3 {
 					setCell(j, i, world, 0, events, turn)
-					newWorld[j][i] = 0
+					newWorld[j-y1][i] = 0
 				} else {
 					setCell(j, i, world, 255, events, turn)
-					newWorld[j][i] = 255
+					newWorld[j-y1][i] = 255
 				}
 			} else {
 				if aliveNeighbors == 3 {
 					setCell(j, i, world, 255, events, turn)
-					newWorld[j][i] = 255
+					newWorld[j-y1][i] = 255
 				} else {
 					setCell(j, i, world, 0, events, turn)
-					newWorld[j][i] = 0
+					newWorld[j-y1][i] = 0
 				}
 			}
 		}
