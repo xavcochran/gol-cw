@@ -18,14 +18,14 @@ type distributorChannels struct {
 	keyPresses <-chan rune
 }
 
-// closure to return return immutable cell to avoid overwriting
+// Closure to return return immutable cell to avoid overwriting
 func makeImmutableWorld(world [][]uint8) func(y, x int) uint8 {
 	return func(y, x int) uint8 {
 		return world[y][x]
 	}
 }
 
-// standard calculate alive cells function from labs
+// Standard calculate alive cells function from labs
 func calculateAliveCells(world [][]byte) []util.Cell {
 	var aliveCells []util.Cell
 	for y, row := range world {
@@ -38,13 +38,13 @@ func calculateAliveCells(world [][]byte) []util.Cell {
 	return aliveCells
 }
 
-// calculates the next state of all the cells
+// Calculates the next state of all the cells
 func calculateNextState(p Params, c distributorChannels, world [][]uint8, turn int, res chan<- [][]uint8) {
 
-	// new empty 2d world
+	// New empty 2d world
 	newWorld := make([][]byte, 0)
 
-	// makes channel for each worker
+	// Makes channel for each worker
 	resChans := make([]chan [][]uint8, p.Threads)
 	for i := range resChans {
 		resChans[i] = make(chan [][]uint8)
@@ -52,9 +52,9 @@ func calculateNextState(p Params, c distributorChannels, world [][]uint8, turn i
 
 	immutableWorld := makeImmutableWorld(world)
 
-	// divides up world between threads
+	// Divides up world between threads
 	vDiff := p.ImageHeight / p.Threads
-	// handles remainder e.g. if num of threads is odd
+	// Handles remainder e.g. if num of threads is odd
 	remainder := p.ImageHeight % p.Threads
 
 	for i, resChan := range resChans {
@@ -69,8 +69,8 @@ func calculateNextState(p Params, c distributorChannels, world [][]uint8, turn i
 		go worker(p, y1, y2, immutableWorld, resChan, turn, c.events)
 	}
 	for _, resChan := range resChans {
-		// gets slice from worker and appends to frame
-		// blocks on channels sequentially so no need for wait groups or additional processing for ordering
+		// Gets slice from worker and appends to frame
+		// Blocks on channels sequentially so no need for wait groups or additional processing for ordering
 		newSlice := <-resChan
 		newWorld = append(newWorld, newSlice...)
 	}
@@ -78,27 +78,27 @@ func calculateNextState(p Params, c distributorChannels, world [][]uint8, turn i
 	res <- newWorld
 }
 
-// writes the image to a pgm file
+// Writes the image to a pgm file
 func writeImage(c distributorChannels, world [][]uint8, p Params, turn int) {
 	filename := fmt.Sprintf("%vx%vx%v", p.ImageWidth, p.ImageHeight, turn)
 	c.ioCommand <- ioOutput
 	c.ioFilename <- filename
 
-	// writes image to event channel byte by byte
+	// Writes image to event channel byte by byte
 	for y := 0; y < p.ImageHeight; y++ {
 		for x := 0; x < p.ImageWidth; x++ {
 			c.ioOutput <- world[y][x]
 		}
 	}
 
-	// send image output completed event to user
+	// Send image output completed event to user
 	c.ioCommand <- ioCheckIdle
 	<-c.ioIdle
 	fmt.Println("sending image", filename)
 	c.events <- ImageOutputComplete{CompletedTurns: turn, Filename: filename}
 }
 
-// initialises the world and sets it to the state stored in the image
+// Initialises the world and sets it to the state stored in the image
 func initialiseWorld(p Params, c distributorChannels) [][]byte {
 	world := make([][]byte, p.ImageHeight)
 	for i := range world {
@@ -122,13 +122,13 @@ func initialiseWorld(p Params, c distributorChannels) [][]byte {
 	return world
 }
 
-// calculates the number of allive cells in the world
+// Calculates the number of allive cells in the world
 func reportAliveCells(c distributorChannels, world [][]byte, turn int) {
 	aliveCells := calculateAliveCells(world)
 	c.events <- AliveCellsCount{CompletedTurns: turn, CellsCount: len(aliveCells)}
 }
 
-// clean up when game is over
+// Clean up when game is over
 func finaliseGame(c distributorChannels, world [][]byte, p Params, turn int) {
 	writeImage(c, world, p, turn)
 	liveCells := calculateAliveCells(world)
@@ -140,13 +140,13 @@ func finaliseGame(c distributorChannels, world [][]byte, p Params, turn int) {
 	close(c.events)
 }
 
-// quit function when user presses q
+// Quit function when user presses q
 func handleQuit(c distributorChannels, turn int, quit *bool) {
 	*quit = true
 	c.events <- StateChange{CompletedTurns: turn, NewState: Quitting}
 }
 
-// handles the keypress the user makes while GOL is paused
+// Handles the keypress the user makes while GOL is paused
 func handlePausedState(c distributorChannels, world *[][]byte, p Params, turn *int, quit *bool) {
 	for {
 		key := <-c.keyPresses
@@ -163,7 +163,7 @@ func handlePausedState(c distributorChannels, world *[][]byte, p Params, turn *i
 	}
 }
 
-// handles the users keypress
+// Handles the users keypress
 func handleKeyPress(key rune, c distributorChannels, world *[][]byte, p Params, turn *int, quit *bool) {
 	switch key {
 	case 'p':

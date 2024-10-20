@@ -16,9 +16,9 @@ func distributor(p Params, c distributorChannels) {
 
 	c.events <- StateChange{CompletedTurns: turn, NewState: Executing}
 
-	// Main game loop
+	// Main game loop for each turn
 	resultChan := make(chan [][]byte)
-	// run calculate here to initialise the first result chan
+	// Run calculate here to initialise the first result chan
 	go calculateNextState(p, c, world, turn, resultChan)
 
 	for turn < p.Turns && !quit {
@@ -37,6 +37,5 @@ func distributor(p Params, c distributorChannels) {
 		}
 	}
 
-	// Finalise
 	finaliseGame(c, world, p, turn)
 }
