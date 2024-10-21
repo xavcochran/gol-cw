@@ -66,7 +66,7 @@ func distributor(p Params, c distributorChannels) {
 			fmt.Println("completed")
 			break outerLoop
 		case <-timer.C:
-			reportAliveCells(c,p, world, client)
+			go reportAliveCells(c,p, world, client)
 		}
 	}
 

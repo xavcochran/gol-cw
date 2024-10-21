@@ -84,7 +84,7 @@ func calculateNextState(p stubs.Params, b *Broker) [][]uint8 {
 
 	for _, resChan := range resChans {
 		// gets slice from worker and appends to frame
-		// blocks on channels sequentially so no need for wait groups or additional processing for ordering
+		// bmus on channels sequentially so no need for wait groups or additional processing for ordering
 		newWorld = append(newWorld, <-resChan...)
 	}
 	b.wg.Done()
@@ -107,7 +107,7 @@ func workerReq(args stubs.ProcessSliceArgs, client *rpc.Client, responseChan cha
 type Broker struct {
 	world   [][]uint8
 	turn    int
-	lock    sync.Mutex
+	mu    sync.Mutex
 	pause   bool
 	quit    bool
 	signal  chan string
@@ -133,15 +133,18 @@ func (b *Broker) Subscribe(req stubs.Subscription, res *stubs.StatusReport) (err
 // iterates through the number of turns and calculates the next state for each turn
 func (b *Broker) ProcessGol(req stubs.Request, res *stubs.Response) (err error) {
 	b.world = req.World
-	for b.turn = 0; b.turn  < req.Params.Turns; b.turn++ {
+	for b.turn = 0; b.turn  < req.Params.Turns; {
 		b.wg.Add(1)
-
+		b.mu.Lock()
 		newWorld := calculateNextState(req.Params, b)
 		b.world = newWorld
+		b.turn++
+		b.mu.Unlock()
 	}
 	b.wg.Wait()
 	res.World = b.world
 	res.CurrentTurn = req.Params.Turns
+	b = &Broker{}
 	return nil
 }
 
@@ -149,11 +152,11 @@ func (b *Broker) CountAliveCells(req stubs.Request, res *stubs.CountAliveRespons
 	b.wg.Add(1)
 	defer b.wg.Done()
 
-	b.lock.Lock()
+	b.mu.Lock()
 	count := calculateAliveCells(b.world)
 	res.CurrentTurn = b.turn
 	res.AliveCount = count
-	b.lock.Unlock()
+	b.mu.Unlock()
 
 	return
 }
