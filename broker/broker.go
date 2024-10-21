@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"uk.ac.bris.cs/gameoflife/stubs"
-	// "uk.ac.bris.cs/gameoflife/util"
+
 )
 
 var jobs = make(chan Jobs, 16)
@@ -29,6 +29,18 @@ func runJobs(client *rpc.Client) {
 			jobs <- job
 		}
 	}
+}
+
+func calculateAliveCells(world [][]byte) int{
+	var aliveCells  int
+	for _, row := range world {
+		for _, cellValue := range row {
+			if cellValue == 255 {
+				aliveCells++
+			}
+		}
+	}
+	return aliveCells
 }
 
 func calculateNextState(p stubs.Params, b *Broker) [][]uint8 {
@@ -121,8 +133,9 @@ func (b *Broker) Subscribe(req stubs.Subscription, res *stubs.StatusReport) (err
 // iterates through the number of turns and calculates the next state for each turn
 func (b *Broker) ProcessGol(req stubs.Request, res *stubs.Response) (err error) {
 	b.world = req.World
-	for turn := 0; turn < req.Params.Turns; turn++ {
+	for b.turn = 0; b.turn  < req.Params.Turns; b.turn++ {
 		b.wg.Add(1)
+
 		newWorld := calculateNextState(req.Params, b)
 		b.world = newWorld
 	}
@@ -132,9 +145,17 @@ func (b *Broker) ProcessGol(req stubs.Request, res *stubs.Response) (err error) 
 	return nil
 }
 
-func (b *Broker) CalculateAliveCells(req stubs.Request, res *stubs.Response) (err error) {
+func (b *Broker) CountAliveCells(req stubs.Request, res *stubs.CountAliveResponse) (err error) {
+	b.wg.Add(1)
+	defer b.wg.Done()
 
-	return nil
+	b.lock.Lock()
+	count := calculateAliveCells(b.world)
+	res.CurrentTurn = b.turn
+	res.AliveCount = count
+	b.lock.Unlock()
+
+	return
 }
 
 func main() {

@@ -3,6 +3,7 @@ package stubs
 var Subscribe = "Broker.Subscribe"
 var Publish = "Broker.Publish"
 var ProcessGol= "Broker.ProcessGol"
+var CountAlive= "Broker.CountAliveCells"
 
 var ProcessSlice = "Worker.ProcessSlice"
 
@@ -39,6 +40,12 @@ type Request struct {
 type Response struct {
 	World       [][]uint8
 	CurrentTurn int
+	AliveCount int
+}
+
+type CountAliveResponse struct{
+	CurrentTurn int
+	AliveCount int
 }
 
 type ProcessSliceArgs struct {

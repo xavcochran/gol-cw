@@ -6,6 +6,7 @@ import (
 	"net/rpc"
 
 	// "uk.ac.bris.cs/gameoflife/stubs"
+	"uk.ac.bris.cs/gameoflife/stubs"
 	"uk.ac.bris.cs/gameoflife/util"
 )
 
@@ -16,19 +17,6 @@ type distributorChannels struct {
 	ioFilename chan<- string
 	ioOutput   chan<- uint8
 	ioInput    <-chan uint8
-}
-
-// standard calculate alive cells function from labs
-func calculateAliveCells(world [][]byte) []util.Cell {
-	var aliveCells []util.Cell
-	for y, row := range world {
-		for x, cellValue := range row {
-			if cellValue == 255 {
-				aliveCells = append(aliveCells, util.Cell{X: x, Y: y})
-			}
-		}
-	}
-	return aliveCells
 }
 
 
@@ -62,7 +50,22 @@ func connectToBroker() (*rpc.Client, error) {
 }
 
 // Calculates the number of alive cells in the world
-func reportAliveCells(c distributorChannels, world [][]byte, turn int) {
-	aliveCells := calculateAliveCells(world)
-	c.events <- AliveCellsCount{CompletedTurns: turn, CellsCount: len(aliveCells)}
+func reportAliveCells(c distributorChannels, p Params, world [][]byte, client *rpc.Client) {
+	// aliveCells := calculateAliveCells(world
+	request := stubs.Request{Params: stubs.Params(p), World: world}
+	response := &stubs.CountAliveResponse{}
+	client.Call(stubs.CountAlive, request, response)
+	c.events <- AliveCellsCount{CompletedTurns: response.CurrentTurn, CellsCount: response.AliveCount}
+}
+
+func calculateAliveCells(world [][]byte) []util.Cell {
+	var aliveCells []util.Cell
+	for y, row := range world {
+		for x, cellValue := range row {
+			if cellValue == 255 {
+				aliveCells = append(aliveCells, util.Cell{X: x, Y: y})
+			}
+		}
+	}
+	return aliveCells
 }

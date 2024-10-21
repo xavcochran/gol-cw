@@ -2,8 +2,7 @@ package gol
 
 import (
 	"fmt"
-	// "time"
-	// "time"
+	"time"
 
 	"uk.ac.bris.cs/gameoflife/stubs"
 	// "uk.ac.bris.cs/gameoflife/util"
@@ -20,7 +19,7 @@ func distributor(p Params, c distributorChannels) {
 	}
 	defer client.Close()
 	// c.events <- StateChange{0, Executing}
-	// timer := time.NewTicker(2 * time.Second)
+	timer := time.NewTicker(2 * time.Second)
 
 	// 2D slice to store the world.
 	world := make([][]byte, p.ImageHeight)
@@ -66,8 +65,8 @@ func distributor(p Params, c distributorChannels) {
 			writeImage(c, res.World, p, res.CurrentTurn)
 			fmt.Println("completed")
 			break outerLoop
-		// case <-timer.C:
-		// 	// reportAliveCells(c, world, turn)
+		case <-timer.C:
+			reportAliveCells(c,p, world, client)
 		}
 	}
 
